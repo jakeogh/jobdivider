@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 from sympy.ntheory import factorint
-
 import multiprocessing as mp
-#from multiprocess_generator import factorize_naive
-from multiprocess_generator import server
-from multiprocess_generator import client
-
+from parallel_processor import server
+from parallel_processor import client
 
 if __name__ == '__main__':
     sp = mp.Process(target=server)
