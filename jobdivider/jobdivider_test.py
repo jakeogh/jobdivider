@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from sympy.ntheory import factorint
 import multiprocessing as mp
-from parallel_processor import server
-from parallel_processor import client
+from jobdivider import server
+from jobdivider import client
 
 if __name__ == '__main__':
     sp = mp.Process(target=server)

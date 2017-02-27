@@ -2,10 +2,10 @@
 
 from sympy.ntheory import factorint
 import multiprocessing as mp
-from parallel_processor import factorize_naive
 from sympy.ntheory import factorint
-from parallel_processor import server
-from parallel_processor import client
+from jobdivider import server
+from jobdivider import client
+from jobdivider import factorize_naive
 import click
 
 @click.group()
