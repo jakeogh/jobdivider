@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
  Example of "distributed computing". Adapted by:
@@ -20,6 +20,7 @@ import queue
 import multiprocessing as mp
 from multiprocessing.managers import SyncManager
 from multiprocessing import AuthenticationError
+from sympy.ntheory import factorint
 import click
 
 @click.group()
@@ -29,6 +30,14 @@ def cli():
 def make_nums(base, count):
     ''' Return list of N odd numbers '''
     return [base + i * 2 for i in range(count)]
+
+def factorize_sympy(n):
+    start = time.time()
+    process_id = os.getpid()
+    factors = sorted([key for key, value in factorint(n).items() for _ in range(value)])
+    end = time.time()
+    jobtime = str(end-start)[0:5]
+    return {'factors':factors, 'pid':process_id, 'jobtime':str(end-start)[0:5]}
 
 def factorize_naive(n):
     start = time.time()
@@ -58,7 +67,8 @@ def factorizer_worker(job_q, res_q):
     while True:
         try:
             job = job_q.get_nowait()
-            out_dict = {n: factorize_naive(n) for n in job}
+            #out_dict = {n: factorize_naive(n) for n in job}
+            out_dict = {n: factorize_sympy(n) for n in job}
             res_q.put(out_dict)
         except queue.Empty:
             return
@@ -131,7 +141,7 @@ def make_client_manager(ip, port, authkey):
 @cli.command()
 @click.option('--ip', is_flag=False, required=False, default='127.0.0.1', help='Server IP.')
 @click.option('--port', is_flag=False, required=False, default=5555, type=int, help='Server port.')
-@click.option('--authkey', is_flag=False, required=False, default='98sdf..xwXiia39', type=str, help='Server key.')
+@click.option('--authkey', is_flag=False, required=False, default=b'98sdf..xwXiia39', type=bytes, help='Server key.')
 @click.option('--processes', is_flag=False, required=True, type=int, help='Client processes to spawn.')
 def client(ip, port, authkey, processes):
     '''
@@ -146,7 +156,7 @@ def client(ip, port, authkey, processes):
 @cli.command()
 @click.option('--ip', is_flag=False, required=False, default='127.0.0.1', help='Server IP.')
 @click.option('--port', is_flag=False, required=False, default=5555, type=int, help='Server port.')
-@click.option('--authkey', is_flag=False, required=False, default='98sdf..xwXiia39', type=str, help='Server key.')
+@click.option('--authkey', is_flag=False, required=False, default=b'98sdf..xwXiia39', type=bytes, help='Server key.')
 @click.option('--base', is_flag=False, required=True, type=int, help='Smallest number to factorize.')
 @click.option('--count', is_flag=False, required=True, type=int, help='Number of numbers to factorize.')
 def server(ip, port, authkey, base, count):
