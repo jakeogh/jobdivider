@@ -1,35 +1,33 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+'''
+ Example of "distributed computing". Adapted by:
+ http://eli.thegreenplace.net/2012/01/24/Distributed-computing-in-python-with-multiprocessing
+ further adapted by: https://github.com/Dan77111/TPS/blob/master/concurrency/on-net/multi-syncmanager.py
+ PUBLIC DOMAIN
 
-# Example of "distributed computing". Adapted by:
-# http://eli.thegreenplace.net/2012/01/24/Distributed-computing-in-python-with-multiprocessing
-# further adapted by: https://github.com/Dan77111/TPS/blob/master/concurrency/on-net/multi-syncmanager.py
-# PUBLIC DOMAIN
-#
-# This program calculates the factors of a number of integers by feeding a
-# shared Queue to N processes, possibly on different machines.
-# IPC is over IP proxied/synchronized by multiprocessing.managers
-#
-# Two Queue objects are passed to each worker process:
-# job_q: a queue of numbers to factor
-# result_q: a queue to return factors and job stats to the server
+ This program calculates the factors of a number of integers by feeding a
+ shared Queue to N processes, possibly on different machines.
+ IPC is over IP proxied/synchronized by multiprocessing.managers
 
-import click
+ Two Queue objects are passed to each worker process:
+ job_q: a queue of numbers to factor
+ result_q: a queue to return factors and job stats to the server
+'''
 import os
-import sys
 import time
 import queue
 import multiprocessing as mp
 from multiprocessing.managers import SyncManager
 from multiprocessing import AuthenticationError
+import click
 
 @click.group()
-@click.pass_context
-def cli(ctx):
+def cli():
     pass
 
 def make_nums(base, count):
-    # Return list of N odd numbers
+    ''' Return list of N odd numbers '''
     return [base + i * 2 for i in range(count)]
 
 def factorize_naive(n):
@@ -66,15 +64,17 @@ def factorizer_worker(job_q, res_q):
             return
 
 def mp_factorizer(job_q, res_q, proc_count):
+    '''Create proc_count processes running factorize_worker() using the same 2 queues.'''
     print("proc_count:", proc_count)
-    # Create proc_count processes running factorize_worker() using the same 2 queues.
     pp = [mp.Process(target=factorizer_worker, args=(job_q, res_q)) for i in range(proc_count)]
     for p in pp: p.start()
     for p in pp: p.join()
 
 def make_server_manager(ip, port, authkey):
-    # Manager a process listening on port accepting connections from clients
-    # Clients run two .register() methods to get access to the shared Queues
+    '''
+    Manager a process listening on port accepting connections from clients
+    Clients run two .register() methods to get access to the shared Queues
+    '''
     job_q = queue.Queue()
     res_q = queue.Queue()
     class JobQueueManager(SyncManager):
@@ -110,9 +110,11 @@ def runserver_manager(ip, port, authkey, base, count):
     return res_dict
 
 def make_client_manager(ip, port, authkey):
-    # Creates manager for client. Manager connects to server on the
-    # given address and exposes the get_job_q and get_res_q methods for
-    # accessing the shared queues from the server. Returns a manager object.
+    '''
+    Creates manager for client. Manager connects to server on the
+    given address and exposes the get_job_q and get_res_q methods for
+    accessing the shared queues from the server. Returns a manager object.
+    '''
     class ServerQueueManager(SyncManager):
         pass
     ServerQueueManager.register('get_job_q')
@@ -132,8 +134,10 @@ def make_client_manager(ip, port, authkey):
 @click.option('--authkey', is_flag=False, required=False, default='98sdf..xwXiia39', type=str, help='Server key.')
 @click.option('--processes', is_flag=False, required=True, type=int, help='Client processes to spawn.')
 def client(ip, port, authkey, processes):
-    # Client creates a client_manager from which obtains the two proxies to the Queues
-    # Then runs mp_factorizer to execute processes that factorize
+    '''
+    Client creates a client_manager from which obtains the two proxies to the Queues
+    Then runs mp_factorizer to execute processes that factorize
+    '''
     man = make_client_manager(ip=ip, port=port, authkey=authkey)
     job_q = man.get_job_q()
     res_q = man.get_res_q()
@@ -151,9 +155,8 @@ def server(ip, port, authkey, base, count):
     start = time.time() # not reliable because the client has gotta be manually started
     d = runserver_manager(ip=ip, port=port, authkey=authkey, base=base, count=count)
     passed = time.time() - start
-    #print(d)
     for k in sorted(d):
-        pid     = d[k]['pid']
+        pid = d[k]['pid']
         factors = d[k]['factors']
         jobtime = d[k]['jobtime']
         print(pid, k, jobtime, factors)
@@ -161,4 +164,3 @@ def server(ip, port, authkey, base, count):
 
 if __name__ == '__main__':
     cli()
-
