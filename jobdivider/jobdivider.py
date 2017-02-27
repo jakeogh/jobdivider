@@ -35,7 +35,6 @@ from sympy.ntheory import factorint
 from kcl.printops import cprint
 import pprint
 import click
-from .jobdivider_test import jobdivider_test
 
 DEFAULT_START = 999999999999
 DEFAULT_COUNT = 1000
