@@ -14,12 +14,12 @@
 # job_q: a queue of numbers to factor
 # result_q: a queue to return factors and job stats to the server
 
-from __future__ import print_function
+
 import click
 import os
 import sys
 import time
-import Queue
+import queue
 import multiprocessing as mp
 from multiprocessing.managers import SyncManager
 from multiprocessing import AuthenticationError
@@ -66,7 +66,7 @@ def factorizer_worker(job_q, res_q):
             out_dict = {n: factorize_naive(n) for n in job}
             #out_dict['pid'] = process_id
             res_q.put(out_dict)
-        except Queue.Empty:
+        except queue.Empty:
             return
 
 def mp_factorizer(job_q, res_q, proc_count):
@@ -87,8 +87,8 @@ def make_server_manager(port, authkey):
     # Methods "registered" by the server and obtain the queues
     # JOB_Q RES_Q. Actually not obtained directly the two Queue objects,
     # but the proxy sync.
-    job_q = Queue.Queue()
-    res_q = Queue.Queue()
+    job_q = queue.Queue()
+    res_q = queue.Queue()
     class JobQueueManager(SyncManager):
         pass
     # Returns always job_q.
