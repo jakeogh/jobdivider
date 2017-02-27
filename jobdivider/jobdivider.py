@@ -205,7 +205,7 @@ def runserver(ip=DEFAULT_IP, port=DEFAULT_PORT, auth=DEFAULT_AUTH, base=DEFAULT_
 
 @cli.command()
 def test():
-    
+   jobdivider_test()
 
 
 if __name__ == '__main__':
