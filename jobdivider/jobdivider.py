@@ -34,6 +34,7 @@ from sympy.ntheory import factorint
 from kcl.printops import cprint
 import pprint
 import click
+from .jobdivider_test import jobdivider_test
 
 DEFAULT_START = 999999999999
 DEFAULT_COUNT = 1000
@@ -200,6 +201,11 @@ def runclient(ip=DEFAULT_IP, port=DEFAULT_PORT, auth=DEFAULT_AUTH, processes=DEF
 @click.option('--count', is_flag=False, required=False, default=DEFAULT_COUNT, type=int, help='Number of numbers to factorize.')
 def runserver(ip=DEFAULT_IP, port=DEFAULT_PORT, auth=DEFAULT_AUTH, base=DEFAULT_START, count=DEFAULT_COUNT):
     server(ip=ip, port=port, auth=auth, base=base, count=count)
+
+
+@cli.command()
+def test():
+    
 
 
 if __name__ == '__main__':
