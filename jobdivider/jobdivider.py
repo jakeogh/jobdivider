@@ -202,11 +202,9 @@ def runclient(ip=DEFAULT_IP, port=DEFAULT_PORT, auth=DEFAULT_AUTH, processes=DEF
 def runserver(ip=DEFAULT_IP, port=DEFAULT_PORT, auth=DEFAULT_AUTH, base=DEFAULT_START, count=DEFAULT_COUNT):
     server(ip=ip, port=port, auth=auth, base=base, count=count)
 
-
 @cli.command()
 def test():
    jobdivider_test()
-
 
 if __name__ == '__main__':
     cli()
