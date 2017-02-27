@@ -24,6 +24,7 @@ job_q:      a queue of numbers to factor
 res_q:   a queue to return factors and job stats to the server
 
 '''
+
 import os
 import time
 import queue
