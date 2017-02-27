@@ -21,14 +21,20 @@ import multiprocessing as mp
 from multiprocessing.managers import SyncManager
 from multiprocessing import AuthenticationError
 from sympy.ntheory import factorint
+from kcl.printops import cprint
+import pprint
 import click
 
-DEFAULT_START = 9999999999999
+DEFAULT_START = 999999999999
+DEFAULT_COUNT = 1000
+DEFAULT_PROCESSES = 4
+# benchmarks on: i7-2620M CPU @ 2.70GHz
+# naive: 17.72s +- 1.00s
+# sympy: 2.19s  +- 0.01s
+
 DEFAULT_PORT = 5555
 DEFAULT_IP = '127.0.0.1'
-DEFAULT_COUNT = 1000
 DEFAULT_AUTH = '98sdf..xwXiia39'
-DEFAULT_PROCESSES = 4
 
 @click.group()
 def cli():
@@ -68,22 +74,30 @@ def factorize_naive(n):
             p += 1
     assert False, "unreachable"
 
-def factorizer_worker(job_q, res_q):
+DEFAULT_FUNCTION = factorize_sympy
+
+def factorize_worker(job_q, res_q, function):
+    worker_start = time.time()
     process_id = os.getpid()
-    print('process id:', process_id)
+    cprint('process id:', process_id)
     while True:
         try:
             job = job_q.get_nowait()
-            #out_dict = {n: factorize_naive(n) for n in job}
-            out_dict = {n: factorize_sympy(n) for n in job}
+            out_dict = {}
+            for n in job:
+                job_start = time.time()
+                out_dict[n] = function(n)
+                job_time = time.time() - job_start
+                out_dict[n]['t'] = round(job_time, 5)
+                out_dict[n]['pid'] = process_id
             res_q.put(out_dict)
         except queue.Empty:
             return
 
-def mp_factorizer(job_q, res_q, proc_count):
+def mp_factorizer(job_q, res_q, proc_count, function):
     '''Create proc_count processes running factorize_worker() using the same 2 queues.'''
     print("proc_count:", proc_count)
-    pp = [mp.Process(target=factorizer_worker, args=(job_q, res_q)) for i in range(proc_count)]
+    pp = [mp.Process(target=factorize_worker, args=(job_q, res_q, function)) for i in range(proc_count)]
     for p in pp: p.start()
     for p in pp: p.join()
 
@@ -147,7 +161,7 @@ def make_client_manager(ip, port, authkey):
     print('Client connected to %s:%s' % (ip, port))
     return manager
 
-def client(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEFAULT_PROCESSES):
+def client(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEFAULT_PROCESSES, function=DEFAULT_FUNCTION):
     authkey = authkey.encode('ascii')
     '''
     Client creates a client_manager from which obtains the two proxies to the Queues
@@ -162,7 +176,7 @@ def client(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEF
 
     job_q = man.get_job_q()
     res_q = man.get_res_q()
-    mp_factorizer(job_q, res_q, processes)
+    mp_factorizer(job_q, res_q, processes, function)
 
 def server(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, base=DEFAULT_START, count=DEFAULT_COUNT):
     authkey = authkey.encode('ascii')
@@ -171,19 +185,20 @@ def server(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, base=DEFAULT_
     start = time.time() # not reliable because the client has gotta be manually started
     d = runserver_manager(ip=ip, port=port, authkey=authkey, base=base, count=count)
     passed = time.time() - start
-    for k in sorted(d):
-        pid = d[k]['pid']
-        factors = d[k]['factors']
-        jobtime = d[k]['jobtime']
-        print(pid, k, jobtime, factors)
-    print("Factorized %d numbers in %.2f seconds." % (count, passed))
+    pprint.pprint(d)
+    #for k in sorted(d):
+    #    pid = d[k]['pid']
+    #    factors = d[k]['factors']
+    #    jobtime = d[k]['jobtime']
+    #    print(pid, k, jobtime, factors)
+    #print("Factorized %d numbers in %.2f seconds." % (count, passed))
 
 @cli.command()
 @click.option('--ip', is_flag=False, required=False, default=DEFAULT_IP, help='Server IP.')
 @click.option('--port', is_flag=False, required=False, default=DEFAULT_PORT, type=int, help='Server port.')
 @click.option('--authkey', is_flag=False, required=False, default=DEFAULT_AUTH, type=str, help='Server key.')
 @click.option('--processes', is_flag=False, required=False, default=DEFAULT_PROCESSES, type=int, help='Client processes to spawn.')
-def runclient(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEFAULT_PROCESSES):
+def runclient(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEFAULT_PROCESSES, function=DEFAULT_FUNCTION):
     client(ip=ip, port=port, authkey=authkey, processes=processes)
 
 @cli.command()
