@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
- Example of "distributed computing". Adapted by:
- http://eli.thegreenplace.net/2012/01/24/Distributed-computing-in-python-with-multiprocessing
- further adapted by: https://github.com/Dan77111/TPS/blob/master/concurrency/on-net/multi-syncmanager.py
- PUBLIC DOMAIN
+Example of "distributed computing".
+Originally from:
+   http://eli.thegreenplace.net/2012/01/24/Distributed-computing-in-python-with-multiprocessing
+Modified by:
+   https://github.com/Dan77111/TPS/blob/master/concurrency/on-net/multi-syncmanager.py
+Then by:
+   https://github.com/jakeogh/jobdivider
 
- This program calculates the factors of a number of integers by feeding a
- shared Queue to N processes, possibly on different machines.
- IPC is over IP proxied/synchronized by multiprocessing.managers
+License: PUBLIC DOMAIN
 
- Two Queue objects are passed to each worker process:
- job_q: a queue of numbers to factor
- result_q: a queue to return factors and job stats to the server
+This program takes a queue of jobs and distributes it over over N processes,
+each running a specified function on the job and returning the results.
+
+The built-in example calculates the factors of a number of integers by
+feeding a shared Queue to N processes, possibly on different machines.
+
+IPC is over IP proxied/synchronized by multiprocessing.managers
+
+Two Queue objects are passed to each worker process:
+job_q:      a queue of numbers to factor
+res_q:   a queue to return factors and job stats to the server
+
 '''
 import os
 import time
