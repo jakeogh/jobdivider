@@ -23,6 +23,13 @@ from multiprocessing import AuthenticationError
 from sympy.ntheory import factorint
 import click
 
+DEFAULT_START = 9999999999999
+DEFAULT_PORT = 5555
+DEFAULT_IP = '127.0.0.1'
+DEFAULT_COUNT = 1000
+DEFAULT_AUTH = '98sdf..xwXiia39'
+DEFAULT_PROCESSES = 4
+
 @click.group()
 def cli():
     pass
@@ -96,7 +103,9 @@ def make_server_manager(ip, port, authkey):
 def runserver_manager(ip, port, authkey, base, count):
     man = make_server_manager(ip=ip, port=port, authkey=authkey)
     man.start()
-    print("Server pid: %d port: %s authkey: '%s'." % (os.getpid(), port, authkey))
+    print("Server pid: %d" % os.getpid())
+    print("Server port: %s" % port)
+    print("Server authkey: %s" % authkey)
     job_q = man.get_job_q()
     res_q = man.get_res_q()
 
@@ -138,28 +147,25 @@ def make_client_manager(ip, port, authkey):
     print('Client connected to %s:%s' % (ip, port))
     return manager
 
-@cli.command()
-@click.option('--ip', is_flag=False, required=False, default='127.0.0.1', help='Server IP.')
-@click.option('--port', is_flag=False, required=False, default=5555, type=int, help='Server port.')
-@click.option('--authkey', is_flag=False, required=False, default=b'98sdf..xwXiia39', type=bytes, help='Server key.')
-@click.option('--processes', is_flag=False, required=True, type=int, help='Client processes to spawn.')
-def client(ip, port, authkey, processes):
+def client(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEFAULT_PROCESSES):
+    authkey = authkey.encode('ascii')
     '''
     Client creates a client_manager from which obtains the two proxies to the Queues
     Then runs mp_factorizer to execute processes that factorize
     '''
-    man = make_client_manager(ip=ip, port=port, authkey=authkey)
+    while True:
+        try:
+            man = make_client_manager(ip=ip, port=port, authkey=authkey)
+            break
+        except ConnectionRefusedError:
+            time.sleep(0.1)
+
     job_q = man.get_job_q()
     res_q = man.get_res_q()
     mp_factorizer(job_q, res_q, processes)
 
-@cli.command()
-@click.option('--ip', is_flag=False, required=False, default='127.0.0.1', help='Server IP.')
-@click.option('--port', is_flag=False, required=False, default=5555, type=int, help='Server port.')
-@click.option('--authkey', is_flag=False, required=False, default=b'98sdf..xwXiia39', type=bytes, help='Server key.')
-@click.option('--base', is_flag=False, required=True, type=int, help='Smallest number to factorize.')
-@click.option('--count', is_flag=False, required=True, type=int, help='Number of numbers to factorize.')
-def server(ip, port, authkey, base, count):
+def server(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, base=DEFAULT_START, count=DEFAULT_COUNT):
+    authkey = authkey.encode('ascii')
     print("Server on port %d with key '%s'" % (port, authkey))
     print("Factorizing %d odd numbers starting from %d" % (count, base))
     start = time.time() # not reliable because the client has gotta be manually started
@@ -171,6 +177,24 @@ def server(ip, port, authkey, base, count):
         jobtime = d[k]['jobtime']
         print(pid, k, jobtime, factors)
     print("Factorized %d numbers in %.2f seconds." % (count, passed))
+
+@cli.command()
+@click.option('--ip', is_flag=False, required=False, default=DEFAULT_IP, help='Server IP.')
+@click.option('--port', is_flag=False, required=False, default=DEFAULT_PORT, type=int, help='Server port.')
+@click.option('--authkey', is_flag=False, required=False, default=DEFAULT_AUTH, type=str, help='Server key.')
+@click.option('--processes', is_flag=False, required=False, default=DEFAULT_PROCESSES, type=int, help='Client processes to spawn.')
+def runclient(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, processes=DEFAULT_PROCESSES):
+    client(ip=ip, port=port, authkey=authkey, processes=processes)
+
+@cli.command()
+@click.option('--ip', is_flag=False, required=False, default=DEFAULT_IP, help='Server IP.')
+@click.option('--port', is_flag=False, required=False, default=DEFAULT_PORT, type=int, help='Server port.')
+@click.option('--authkey', is_flag=False, required=False, default=DEFAULT_AUTH, type=str, help='Server key.')
+@click.option('--base', is_flag=False, required=False, default=DEFAULT_START, type=int, help='Smallest number to factorize.')
+@click.option('--count', is_flag=False, required=False, default=DEFAULT_COUNT, type=int, help='Number of numbers to factorize.')
+def runserver(ip=DEFAULT_IP, port=DEFAULT_PORT, authkey=DEFAULT_AUTH, base=DEFAULT_START, count=DEFAULT_COUNT):
+    server(ip=ip, port=port, authkey=authkey, base=base, count=count)
+
 
 if __name__ == '__main__':
     cli()
