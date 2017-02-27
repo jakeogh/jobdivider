@@ -3,8 +3,7 @@
 from sympy.ntheory import factorint
 import multiprocessing as mp
 from multiprocess_generator import factorize_naive
-from multiprocess_generator import factorize_sympy
-from sympy.ntheory import factorint #todo!
+from sympy.ntheory import factorint
 from multiprocess_generator import server
 from multiprocess_generator import client
 import click
@@ -24,9 +23,9 @@ def launch_server_and_clients(function):
 def naive_wrapped():
     launch_server_and_clients(function=factorize_naive)
 
-@cli.command()
-def sympy_wrapped():
-    launch_server_and_clients(function=factorize_sympy)
+#@cli.command()
+#def sympy_wrapped():
+#    launch_server_and_clients(function=factorize_sympy)
 
 @cli.command()
 def sympy():
