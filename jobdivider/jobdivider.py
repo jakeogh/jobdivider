@@ -32,7 +32,7 @@ import multiprocessing as mp
 from multiprocessing.managers import SyncManager
 from multiprocessing import AuthenticationError
 from sympy.ntheory import factorint
-from kcl.printops import cprint
+from kcl.printops import eprint
 import pprint
 import click
 
@@ -77,7 +77,7 @@ def factorize_naive(n):
 def factorize_worker(job_q, res_q, function):
     worker_start = time.time()
     process_id = os.getpid()
-    cprint('process id:', process_id)
+    eprint('process id:', process_id)
     while True:
         try:
             job = job_q.get_nowait()
